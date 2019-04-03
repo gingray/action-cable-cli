@@ -1,5 +1,5 @@
 package client
 
 type Config struct {
-	url string
+	Url string
 }
