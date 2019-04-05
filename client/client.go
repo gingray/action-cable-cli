@@ -1,6 +1,8 @@
 package client
 
 import (
+	"fmt"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -10,7 +12,13 @@ type Client struct {
 }
 
 func NewClient(config *Config) (client *Client, err error) {
-	conn, _, err := websocket.DefaultDialer.Dial(config.Url, nil)
+	conn, resp, err := websocket.DefaultDialer.Dial(config.Url, nil)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(resp)
+		fmt.Println("Connection success")
+	}
 	if err != nil {
 		return nil, err
 	}
