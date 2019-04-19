@@ -7,9 +7,12 @@ import (
 )
 
 type Client struct {
-	config *Config
-	conn   *websocket.Conn
+	config       *Config
+	conn         *websocket.Conn
+	ChReadBuffer chan string
 }
+
+type readerFunc func(string)
 
 func NewClient(config *Config) (client *Client, err error) {
 	conn, resp, err := websocket.DefaultDialer.Dial(config.Url, nil)
@@ -22,5 +25,16 @@ func NewClient(config *Config) (client *Client, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{conn: conn, config: config}, nil
+	return &Client{conn: conn, config: config, ChReadBuffer: make(chan string)}, nil
+}
+
+func (self *Client) WriteMessage(msg string) {
+	self.conn.WriteMessage(websocket.TextMessage, []byte(msg))
+}
+
+func (self *Client) ReadLoop() {
+	for {
+		_, buffer, _ := self.conn.ReadMessage()
+		self.ChReadBuffer <- string(buffer)
+	}
 }
