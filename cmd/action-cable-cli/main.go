@@ -3,6 +3,7 @@ package main
 import (
 	"action-cable-cli/client"
 	"fmt"
+	"net/url"
 
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
@@ -10,22 +11,44 @@ import (
 
 func main() {
 	app := tview.NewApplication()
-	inputField := tview.NewInputField().
-		SetLabel("Enter a number: ").
-		SetFieldWidth(10).
-		SetAcceptanceFunc(tview.InputFieldInteger).
+	config := client.Config{}
+	config.UrlField = tview.NewInputField().
+		SetLabel("WS URL: ").
+		SetFieldWidth(100).
 		SetDoneFunc(func(key tcell.Key) {
-			fmt.Println(key)
-			app.Stop()
-		})
-	if err := app.SetRoot(inputField, true).SetFocus(inputField).Run(); err != nil {
-		panic(err)
-	}
+			_, err := url.ParseRequestURI(config.UrlField.GetText())
+			if err != nil {
+				config.UrlField.SetLabel("WS URL(error): ")
+				config.UrlField.SetLabelColor(tcell.ColorOrangeRed)
+				return
+			}
+			config.UrlField.SetLabelColor(tcell.ColorPaleGreen)
+			config.UrlField.SetLabel("WS URL: ")
 
-	config := &client.Config{Url: "wss://echo.websocket.org"}
-	client, err := client.NewClient(config)
+		})
+	config.StatusText = tview.NewTextView()
+	config.StatusText.SetChangedFunc(func() {
+		app.Draw()
+	})
+	config.StatusText.SetWrap(true)
+
+	grid := tview.NewGrid().
+		SetRows(-1, -1, -1).
+		SetColumns(-1, -1, -1).
+		AddItem(config.UrlField, 0, 0, 1, 2, 0, 0, true)
+	grid.SetBackgroundColor(tview.Styles.PrimitiveBackgroundColor)
+
+	grid.AddItem(config.StatusText, 0, 2, 1, 1, 0, 0, false)
+
+	configWs := &client.Config{Url: "wss://echo.websocket.org"}
+	client, err := client.NewClient(configWs)
 	if err != nil {
 		return
 	}
-	fmt.Printf("%v", &client)
+	fmt.Fprintf(config.StatusText, "%v", &client)
+
+	if err := app.SetRoot(grid, true).SetFocus(grid).Run(); err != nil {
+		panic(err)
+	}
+
 }
