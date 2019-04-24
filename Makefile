@@ -9,3 +9,6 @@ build:
 deps:
 		$(GOGET) github.com/gorilla/websocket
 		$(GOGET) github.com/rivo/tview
+run:
+		$(GOBUILD) -o $(OUTPUT) cmd/action-cable-cli/main.go
+		./$(OUTPUT)
