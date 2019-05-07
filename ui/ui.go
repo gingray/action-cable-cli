@@ -13,11 +13,15 @@ func BuildUI(config *client.Config) *tview.Application {
 	currentFocus := 0
 	app := tview.NewApplication()
 	grid := tview.NewGrid().
-		SetRows(3, -1, -1).
-		SetColumns(-1, -1, -1)
+		SetRows(3, 3, 1, -1).
+		SetColumns(-1, -1, -1).
+		SetGap(0, 1)
 	grid.SetBackgroundColor(tview.Styles.PrimitiveBackgroundColor)
 	elements = append(elements, createField(grid))
 	elements = append(elements, createMethodInput(grid))
+	elements = append(elements, createSendBtn(grid))
+	elements = append(elements, createConnectBtn(grid))
+
 	// elements = append(elements, createOutLogField(grid, app))
 	app.SetRoot(grid, true).SetFocus(grid)
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -51,7 +55,7 @@ func createField(root *tview.Grid) tview.Primitive {
 	})
 	inputField.SetLabelColor(tcell.ColorPaleGreen)
 	inputField.SetLabel("WS URL: ")
-	root.AddItem(inputField, 0, 0, 1, 3, 0, 0, true)
+	root.AddItem(inputField, 0, 0, 1, 2, 0, 0, true)
 	return inputField
 }
 
@@ -59,8 +63,20 @@ func createMethodInput(root *tview.Grid) tview.Primitive {
 	methodInput := tview.NewInputField().
 		SetLabel("Method to call: ").
 		SetFieldWidth(100)
-	root.AddItem(methodInput, 1, 0, 1, 3, 0, 0, true)
+	root.AddItem(methodInput, 1, 0, 1, 2, 0, 0, true)
 	return methodInput
+}
+
+func createSendBtn(root *tview.Grid) tview.Primitive {
+	sendBtn := tview.NewButton("Send")
+	root.AddItem(sendBtn, 2, 0, 1, 1, 0, 0, true)
+	return sendBtn
+}
+
+func createConnectBtn(root *tview.Grid) tview.Primitive {
+	connectBtn := tview.NewButton("Connect")
+	root.AddItem(connectBtn, 2, 1, 1, 1, 0, 0, true)
+	return connectBtn
 }
 
 func createOutLogField(root *tview.Grid, app *tview.Application) tview.Primitive {
@@ -69,6 +85,6 @@ func createOutLogField(root *tview.Grid, app *tview.Application) tview.Primitive
 		app.Draw()
 	})
 	statusText.SetWrap(true)
-	root.AddItem(statusText, 2, 0, 1, 3, 0, 0, false)
+	root.AddItem(statusText, 3, 0, 1, 3, 0, 0, false)
 	return statusText
 }
