@@ -69,12 +69,20 @@ func createMethodInput(root *tview.Grid) tview.Primitive {
 
 func createSendBtn(root *tview.Grid) tview.Primitive {
 	sendBtn := tview.NewButton("Send")
+	sendBtn.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		return nil
+	})
+
 	root.AddItem(sendBtn, 2, 0, 1, 1, 0, 0, true)
 	return sendBtn
 }
 
 func createConnectBtn(root *tview.Grid) tview.Primitive {
 	connectBtn := tview.NewButton("Connect")
+	connectBtn.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		return nil
+	})
+
 	root.AddItem(connectBtn, 2, 1, 1, 1, 0, 0, true)
 	return connectBtn
 }
