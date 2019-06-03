@@ -12,14 +12,14 @@ import (
 
 type UI struct {
 	Field      *tview.InputField
-	Input      *tview.InputField
+	InputField      *tview.InputField
 	SendBtn    *tview.Button
 	ConnectBtn *tview.Button
 }
 
 var mainUI *UI
 
-func BuildUI(config *client.Config) *tview.Application {
+func BuildUI(cl *client.Client) *tview.Application {
 	elements := []tview.Primitive{}
 	currentFocus := 0
 	app := tview.NewApplication()
@@ -29,7 +29,7 @@ func BuildUI(config *client.Config) *tview.Application {
 		SetGap(0, 1)
 	mainUI = &UI{}
 	grid.SetBackgroundColor(tview.Styles.PrimitiveBackgroundColor)
-	elements = append(elements, createField(grid))
+	elements = append(elements, mainUI.createField(grid))
 	elements = append(elements, createMethodInput(grid))
 	elements = append(elements, createSendBtn(grid))
 	elements = append(elements, createConnectBtn(grid))
@@ -48,37 +48,36 @@ func BuildUI(config *client.Config) *tview.Application {
 		}
 		return event
 	})
-	cl := client.GetInstance()
 	go mainUI.UpdateUILoop(cl.UIChan)
 	return app
 }
 
 func (self *UI ) UpdateUILoop(ch chan helpers.UIMsg) {
 for uiMsg := range ch {
-	if self.Field != nil && uiMsg.MsgType== helpers.UI_INFO {
-		self.Field.SetText(uiMsg.Msg)
+	if self.InputField != nil && uiMsg.MsgType== helpers.UI_INFO {
+		self.InputField.SetText(uiMsg.Msg)
 	}
 }
 }
 
-func createField(root *tview.Grid) tview.Primitive {
-	inputField := tview.NewInputField().
+func (self *UI) createField(root *tview.Grid) tview.Primitive {
+	self.InputField = tview.NewInputField().
 		SetLabel("WS URL: ").
 		SetFieldWidth(100)
-	inputField.SetDoneFunc(func(key tcell.Key) {
-		_, err := url.ParseRequestURI(inputField.GetText())
+	self.InputField.SetDoneFunc(func(key tcell.Key) {
+		_, err := url.ParseRequestURI(self.InputField.GetText())
 		if err != nil {
-			inputField.SetLabel("WS URL(error): ")
-			inputField.SetLabelColor(tcell.ColorOrangeRed)
+			self.InputField.SetLabel("WS URL(error): ")
+			self.InputField.SetLabelColor(tcell.ColorOrangeRed)
 			return
 		}
-		inputField.SetLabelColor(tcell.ColorPaleGreen)
-		inputField.SetLabel("WS URL: ")
+		self.InputField.SetLabelColor(tcell.ColorPaleGreen)
+		self.InputField.SetLabel("WS URL: ")
 	})
-	inputField.SetLabelColor(tcell.ColorPaleGreen)
-	inputField.SetLabel("WS URL: ")
-	root.AddItem(inputField, 0, 0, 1, 2, 0, 0, true)
-	return inputField
+	self.InputField.SetLabelColor(tcell.ColorPaleGreen)
+	self.InputField.SetLabel("WS URL: ")
+	root.AddItem(self.InputField, 0, 0, 1, 2, 0, 0, true)
+	return self.InputField
 }
 
 func createMethodInput(root *tview.Grid) tview.Primitive {
