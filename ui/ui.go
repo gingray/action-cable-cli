@@ -2,11 +2,22 @@ package ui
 
 import (
 	"action-cable-cli/client"
+	"action-cable-cli/helpers"
 	"net/url"
 
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 )
+
+
+type UI struct {
+	Field      *tview.InputField
+	Input      *tview.InputField
+	SendBtn    *tview.Button
+	ConnectBtn *tview.Button
+}
+
+var mainUI *UI
 
 func BuildUI(config *client.Config) *tview.Application {
 	elements := []tview.Primitive{}
@@ -16,6 +27,7 @@ func BuildUI(config *client.Config) *tview.Application {
 		SetRows(3, 3, 1, -1).
 		SetColumns(-1, -1, -1).
 		SetGap(0, 1)
+	mainUI = &UI{}
 	grid.SetBackgroundColor(tview.Styles.PrimitiveBackgroundColor)
 	elements = append(elements, createField(grid))
 	elements = append(elements, createMethodInput(grid))
@@ -36,7 +48,17 @@ func BuildUI(config *client.Config) *tview.Application {
 		}
 		return event
 	})
+	cl := client.GetInstance()
+	go mainUI.UpdateUILoop(cl.UIChan)
 	return app
+}
+
+func (self *UI ) UpdateUILoop(ch chan helpers.UIMsg) {
+for uiMsg := range ch {
+	if self.Field != nil && uiMsg.MsgType== helpers.UI_INFO {
+		self.Field.SetText(uiMsg.Msg)
+	}
+}
 }
 
 func createField(root *tview.Grid) tview.Primitive {
@@ -80,6 +102,10 @@ func createSendBtn(root *tview.Grid) tview.Primitive {
 func createConnectBtn(root *tview.Grid) tview.Primitive {
 	connectBtn := tview.NewButton("Connect")
 	connectBtn.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyEnter {
+			cl := client.GetInstance()
+			cl.Connect()
+		}
 		return nil
 	})
 

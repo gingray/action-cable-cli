@@ -1,5 +1,7 @@
 package client
 
 type Config struct {
-	Url string
+	Url     string
+	Method  string
+	Payload string
 }

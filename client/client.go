@@ -1,40 +1,42 @@
 package client
 
 import (
-	"fmt"
+	"action-cable-cli/helpers"
+	"net/http"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
 
 type Client struct {
-	config       *Config
+	Config       *Config
+	response     *http.Response
 	conn         *websocket.Conn
-	ChReadBuffer chan string
+	UIChan chan helpers.UIMsg
 }
 
-type readerFunc func(string)
 
-func NewClient(config *Config) (client *Client, err error) {
-	conn, resp, err := websocket.DefaultDialer.Dial(config.Url, nil)
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(resp)
-		fmt.Println("Connection success")
+var mutex sync.Mutex
+var clientInstance *Client
+
+func GetInstance() *Client  {
+	mutex.Lock()
+	defer mutex.Unlock()
+	if clientInstance == nil {
+		clientInstance = &Client{Config:&Config{}, UIChan:make(chan helpers.UIMsg)}
 	}
-	if err != nil {
-		return nil, err
+	return clientInstance
+}
+
+func (self *Client) Connect() {
+	var err error
+	self.conn, self.response, err = websocket.DefaultDialer.Dial(self.Config.Url, nil)
+	if err !=nil {
+		self.UIChan <- helpers.UIMsg{MsgType:helpers.UI_INFO, Msg: err.Error()}
 	}
-	return &Client{conn: conn, config: config, ChReadBuffer: make(chan string)}, nil
 }
 
 func (self *Client) WriteMessage(msg string) {
 	self.conn.WriteMessage(websocket.TextMessage, []byte(msg))
 }
 
-func (self *Client) ReadLoop() {
-	for {
-		_, buffer, _ := self.conn.ReadMessage()
-		self.ChReadBuffer <- string(buffer)
-	}
-}
