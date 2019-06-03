@@ -3,10 +3,10 @@ package ui
 import (
 	"action-cable-cli/client"
 	"action-cable-cli/helpers"
-	"net/url"
-
+	"fmt"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
+	"net/url"
 )
 
 
@@ -55,7 +55,12 @@ func BuildUI(cl *client.Client) *tview.Application {
 func (self *UI ) UpdateUILoop(ch chan helpers.UIMsg) {
 for uiMsg := range ch {
 	if self.StatusText != nil && uiMsg.MsgType== helpers.UI_INFO {
-		self.StatusText.SetText(uiMsg.Msg)
+		if uiMsg.Method == helpers.METHOD_APPEND {
+			text :=self.StatusText.GetText(true)
+			self.StatusText.SetText(fmt.Sprintf("%s\n%s", text, uiMsg.Msg))
+		}else{
+			self.StatusText.SetText(uiMsg.Msg)
+		}
 	}
 }
 }

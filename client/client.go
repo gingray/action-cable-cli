@@ -4,6 +4,7 @@ import (
 	"action-cable-cli/helpers"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -42,14 +43,25 @@ func (self *Client) Connect() {
 		if err2 != nil {
 			self.UIChan <- helpers.UIMsg{MsgType:helpers.UI_INFO, Msg: err2.Error()}
 		}else{
-			defer self.response.Body.Close()
 			var sb strings.Builder
 			for k, v := range self.response.Header {
 				sb.WriteString(fmt.Sprintf("%s:%s\n", k,v))
 			}
 			sb.WriteString(fmt.Sprintf("\n%s", string(data)))
 			self.UIChan <- helpers.UIMsg{MsgType:helpers.UI_INFO, Msg: sb.String(), Method: helpers.METHOD_REPLACE}
+			go self.ResponseListener()
 		}
+	}
+}
+
+func (self *Client) ResponseListener() {
+	for {
+		_, message, err:= self.conn.ReadMessage()
+		if err!=nil {
+			log.Println("read:", err)
+			return
+		}
+		self.UIChan <- helpers.UIMsg{Msg:string(message), MsgType: helpers.UI_INFO, Method: helpers.METHOD_APPEND}
 	}
 }
 
