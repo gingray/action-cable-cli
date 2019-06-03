@@ -2,8 +2,10 @@ package client
 
 import (
 	"action-cable-cli/helpers"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -41,7 +43,12 @@ func (self *Client) Connect() {
 			self.UIChan <- helpers.UIMsg{MsgType:helpers.UI_INFO, Msg: err2.Error()}
 		}else{
 			defer self.response.Body.Close()
-			self.UIChan <- helpers.UIMsg{MsgType:helpers.UI_INFO, Msg: string(data)}
+			var sb strings.Builder
+			for k, v := range self.response.Header {
+				sb.WriteString(fmt.Sprintf("%s:%s\n", k,v))
+			}
+			sb.WriteString(fmt.Sprintf("\n%s", string(data)))
+			self.UIChan <- helpers.UIMsg{MsgType:helpers.UI_INFO, Msg: sb.String(), Method: helpers.METHOD_REPLACE}
 		}
 	}
 }
