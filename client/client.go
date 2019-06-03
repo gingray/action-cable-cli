@@ -2,6 +2,7 @@ package client
 
 import (
 	"action-cable-cli/helpers"
+	"io/ioutil"
 	"net/http"
 	"sync"
 
@@ -33,6 +34,15 @@ func (self *Client) Connect() {
 	self.conn, self.response, err = websocket.DefaultDialer.Dial(self.Config.Url, nil)
 	if err !=nil {
 		self.UIChan <- helpers.UIMsg{MsgType:helpers.UI_INFO, Msg: err.Error()}
+	}
+	if self.response != nil {
+		data, err2 := ioutil.ReadAll(self.response.Body)
+		if err2 != nil {
+			self.UIChan <- helpers.UIMsg{MsgType:helpers.UI_INFO, Msg: err2.Error()}
+		}else{
+			defer self.response.Body.Close()
+			self.UIChan <- helpers.UIMsg{MsgType:helpers.UI_INFO, Msg: string(data)}
+		}
 	}
 }
 

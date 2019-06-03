@@ -11,10 +11,11 @@ import (
 
 
 type UI struct {
-	Field      *tview.InputField
-	InputField      *tview.InputField
-	SendBtn    *tview.Button
-	ConnectBtn *tview.Button
+	MethodField *tview.InputField
+	UrlField    *tview.InputField
+	SendBtn     *tview.Button
+	ConnectBtn  *tview.Button
+	StatusText *tview.TextView
 }
 
 var mainUI *UI
@@ -29,10 +30,11 @@ func BuildUI(cl *client.Client) *tview.Application {
 		SetGap(0, 1)
 	mainUI = &UI{}
 	grid.SetBackgroundColor(tview.Styles.PrimitiveBackgroundColor)
-	elements = append(elements, mainUI.createField(grid))
-	elements = append(elements, createMethodInput(grid))
-	elements = append(elements, createSendBtn(grid))
-	elements = append(elements, createConnectBtn(grid))
+	elements = append(elements, mainUI.createUrlInput(grid))
+	elements = append(elements, mainUI.createMethodInput(grid))
+	elements = append(elements, mainUI.createSendBtn(grid))
+	elements = append(elements, mainUI.createConnectBtn(grid))
+	mainUI.createOutLogField(grid, app)
 
 	// elements = append(elements, createOutLogField(grid, app))
 	app.SetRoot(grid, true).SetFocus(grid)
@@ -43,8 +45,6 @@ func BuildUI(cl *client.Client) *tview.Application {
 				currentFocus = 0
 			}
 			app.SetFocus(elements[currentFocus])
-			//set focus different UI items
-			//panic("")
 		}
 		return event
 	})
@@ -54,53 +54,55 @@ func BuildUI(cl *client.Client) *tview.Application {
 
 func (self *UI ) UpdateUILoop(ch chan helpers.UIMsg) {
 for uiMsg := range ch {
-	if self.InputField != nil && uiMsg.MsgType== helpers.UI_INFO {
-		self.InputField.SetText(uiMsg.Msg)
+	if self.StatusText != nil && uiMsg.MsgType== helpers.UI_INFO {
+		self.StatusText.SetText(uiMsg.Msg)
 	}
 }
 }
 
-func (self *UI) createField(root *tview.Grid) tview.Primitive {
-	self.InputField = tview.NewInputField().
+func (self *UI) createUrlInput(root *tview.Grid) tview.Primitive {
+	self.UrlField = tview.NewInputField().
 		SetLabel("WS URL: ").
 		SetFieldWidth(100)
-	self.InputField.SetDoneFunc(func(key tcell.Key) {
-		_, err := url.ParseRequestURI(self.InputField.GetText())
+	self.UrlField.SetDoneFunc(func(key tcell.Key) {
+		_, err := url.ParseRequestURI(self.UrlField.GetText())
 		if err != nil {
-			self.InputField.SetLabel("WS URL(error): ")
-			self.InputField.SetLabelColor(tcell.ColorOrangeRed)
+			self.UrlField.SetLabel("WS URL(error): ")
+			self.UrlField.SetLabelColor(tcell.ColorOrangeRed)
 			return
 		}
-		self.InputField.SetLabelColor(tcell.ColorPaleGreen)
-		self.InputField.SetLabel("WS URL: ")
+		self.UrlField.SetLabelColor(tcell.ColorPaleGreen)
+		self.UrlField.SetLabel("WS URL: ")
+		cl :=client.GetInstance()
+		cl.Config.Url = self.UrlField.GetText()
 	})
-	self.InputField.SetLabelColor(tcell.ColorPaleGreen)
-	self.InputField.SetLabel("WS URL: ")
-	root.AddItem(self.InputField, 0, 0, 1, 2, 0, 0, true)
-	return self.InputField
+	self.UrlField.SetLabelColor(tcell.ColorPaleGreen)
+	self.UrlField.SetLabel("WS URL: ")
+	root.AddItem(self.UrlField, 0, 0, 1, 2, 0, 0, true)
+	return self.UrlField
 }
 
-func createMethodInput(root *tview.Grid) tview.Primitive {
-	methodInput := tview.NewInputField().
+func (self * UI) createMethodInput(root *tview.Grid) tview.Primitive {
+	self.MethodField = tview.NewInputField().
 		SetLabel("Method to call: ").
 		SetFieldWidth(100)
-	root.AddItem(methodInput, 1, 0, 1, 2, 0, 0, true)
-	return methodInput
+	root.AddItem(self.MethodField, 1, 0, 1, 2, 0, 0, true)
+	return self.MethodField
 }
 
-func createSendBtn(root *tview.Grid) tview.Primitive {
-	sendBtn := tview.NewButton("Send")
-	sendBtn.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+func (self *UI) createSendBtn(root *tview.Grid) tview.Primitive {
+	self.SendBtn = tview.NewButton("Send")
+	self.SendBtn.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		return nil
 	})
 
-	root.AddItem(sendBtn, 2, 0, 1, 1, 0, 0, true)
-	return sendBtn
+	root.AddItem(self.SendBtn, 2, 0, 1, 1, 0, 0, true)
+	return self.SendBtn
 }
 
-func createConnectBtn(root *tview.Grid) tview.Primitive {
-	connectBtn := tview.NewButton("Connect")
-	connectBtn.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+func (self *UI) createConnectBtn(root *tview.Grid) tview.Primitive {
+	self.ConnectBtn = tview.NewButton("Connect")
+	self.ConnectBtn.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEnter {
 			cl := client.GetInstance()
 			cl.Connect()
@@ -108,16 +110,16 @@ func createConnectBtn(root *tview.Grid) tview.Primitive {
 		return nil
 	})
 
-	root.AddItem(connectBtn, 2, 1, 1, 1, 0, 0, true)
-	return connectBtn
+	root.AddItem(self.ConnectBtn, 2, 1, 1, 1, 0, 0, true)
+	return self.ConnectBtn
 }
 
-func createOutLogField(root *tview.Grid, app *tview.Application) tview.Primitive {
-	statusText := tview.NewTextView()
-	statusText.SetChangedFunc(func() {
+func (self *UI) createOutLogField(root *tview.Grid, app *tview.Application) tview.Primitive {
+	self.StatusText = tview.NewTextView()
+	self.StatusText.SetChangedFunc(func() {
 		app.Draw()
 	})
-	statusText.SetWrap(true)
-	root.AddItem(statusText, 3, 0, 1, 3, 0, 0, false)
-	return statusText
+	self.StatusText.SetWrap(true)
+	root.AddItem(self.StatusText, 3, 0, 1, 3, 0, 0, false)
+	return self.StatusText
 }
