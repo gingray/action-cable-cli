@@ -83,6 +83,8 @@ func (self *UI) createUrlInput(root *tview.Grid) tview.Primitive {
 	})
 	self.UrlField.SetLabelColor(tcell.ColorPaleGreen)
 	self.UrlField.SetLabel("WS URL: ")
+	cl :=client.GetInstance()
+	self.UrlField.SetText(cl.Config.Url)
 	root.AddItem(self.UrlField, 0, 0, 1, 2, 0, 0, true)
 	return self.UrlField
 }
@@ -91,6 +93,11 @@ func (self * UI) createMethodInput(root *tview.Grid) tview.Primitive {
 	self.MethodField = tview.NewInputField().
 		SetLabel("Method to call: ").
 		SetFieldWidth(100)
+	self.MethodField.SetDoneFunc(func(key tcell.Key) {
+		data := self.MethodField.GetText()
+		cl := client.GetInstance()
+		cl.Config.Payload = data
+	})
 	root.AddItem(self.MethodField, 1, 0, 1, 2, 0, 0, true)
 	return self.MethodField
 }
@@ -98,6 +105,14 @@ func (self * UI) createMethodInput(root *tview.Grid) tview.Primitive {
 func (self *UI) createSendBtn(root *tview.Grid) tview.Primitive {
 	self.SendBtn = tview.NewButton("Send")
 	self.SendBtn.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyEnter {
+			cl := client.GetInstance()
+			if cl.Config.Payload == "" {
+				return nil
+			}
+			cl.SendDataCh <- cl.Config.Payload
+			cl.UIChan <- helpers.UIMsg{Msg:cl.Config.Payload, MsgType: helpers.UI_INFO, Method: helpers.METHOD_APPEND}
+		}
 		return nil
 	})
 

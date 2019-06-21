@@ -17,6 +17,7 @@ type Client struct {
 	response     *http.Response
 	conn         *websocket.Conn
 	UIChan chan helpers.UIMsg
+	SendDataCh chan string
 }
 
 
@@ -27,7 +28,7 @@ func GetInstance() *Client  {
 	mutex.Lock()
 	defer mutex.Unlock()
 	if clientInstance == nil {
-		clientInstance = &Client{Config:&Config{}, UIChan:make(chan helpers.UIMsg)}
+		clientInstance = &Client{Config:NewConfig(), UIChan:make(chan helpers.UIMsg), SendDataCh:make(chan string)}
 	}
 	return clientInstance
 }
@@ -50,6 +51,7 @@ func (self *Client) Connect() {
 			sb.WriteString(fmt.Sprintf("\n%s", string(data)))
 			self.UIChan <- helpers.UIMsg{MsgType:helpers.UI_INFO, Msg: sb.String(), Method: helpers.METHOD_REPLACE}
 			go self.ResponseListener()
+			go self.SendData()
 		}
 	}
 }
@@ -65,7 +67,8 @@ func (self *Client) ResponseListener() {
 	}
 }
 
-func (self *Client) WriteMessage(msg string) {
-	self.conn.WriteMessage(websocket.TextMessage, []byte(msg))
+func (self *Client) SendData() {
+	for data:= range self.SendDataCh {
+		self.conn.WriteMessage(websocket.TextMessage, []byte(data))
+	}
 }
-
